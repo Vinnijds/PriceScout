@@ -1,33 +1,48 @@
-// src/main.jsx
+// src/main.jsx (NOVA ESTRUTURA DE ROTAS)
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
-// Nossas importações de páginas e componentes
+// Importações
 import App from './App.jsx';
+import Home from './pages/Home.jsx'; // <-- IMPORTA A NOVA HOME
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import Dashboard from './pages/Dashboard.jsx';
-import { AuthProvider } from './context/AuthContext.jsx'; // <-- O Provedor
+import { AuthProvider } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx'; // <-- O Guardião
 
 import './index.css';
 
-// 1. Define as rotas
+// 1. Define a nova estrutura de rotas
 const router = createBrowserRouter([
+  // --- ROTAS PÚBLICAS (Sem a barra de navegação) ---
   {
     path: '/',
-    element: <App />, // <-- O App.jsx é renderizado aqui
+    element: <Home />, // A nova página inicial
+  },
+  {
+    path: '/login',
+    element: <Login />,
+  },
+  {
+    path: '/register',
+    element: <Register />,
+  },
+  
+  // --- ROTAS PROTEGIDAS (Com a barra de navegação) ---
+  {
+    element: <ProtectedRoute />, // O "Guardião"
     children: [
-      // Rotas Públicas
-      { path: '/login', element: <Login /> },
-      { path: '/register', element: <Register /> },
-
-      // Rotas Protegidas (envelopadas pelo Guardião)
       {
-        element: <ProtectedRoute />, // O Guardião
+        element: <App />, // O "Layout" que tem a nav bar
         children: [
-          { path: '/', element: <Dashboard /> }
+          {
+            path: '/dashboard', // O Dashboard agora é /dashboard
+            element: <Dashboard />,
+          },
+          // Ex: { path: '/perfil', element: <Perfil /> }
+          // (Qualquer outra página logada iria aqui)
         ]
       }
     ]
@@ -37,11 +52,6 @@ const router = createBrowserRouter([
 // 2. Renderiza o App
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    {/* ESTA É A PARTE MAIS IMPORTANTE:
-      O <AuthProvider> DEVE estar "envolvendo" o <RouterProvider>.
-      Isso faz com que o <App /> (que está dentro do router) 
-      consiga usar o useAuth().
-    */}
     <AuthProvider>
       <RouterProvider router={router} />
     </AuthProvider>
