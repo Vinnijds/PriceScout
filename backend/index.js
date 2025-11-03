@@ -158,6 +158,13 @@ app.delete('/products/:id/follow', authenticateToken, async (req, res) => {
   }
 });
 
+// Feature flags – visíveis a todos os clientes
+app.get('/features', (req, res) => {
+  // Por enquanto, sempre habilitado. Caso queira controlar via ambiente:
+  // const enabled = String(process.env.GPT5_ENABLED || 'true') === 'true';
+  res.json({ gpt5_enabled: true });
+});
+
 
 // RF-007: Ver o Dashboard (produtos seguidos + ofertas)
 app.get('/dashboard', authenticateToken, async (req, res) => {
