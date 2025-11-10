@@ -5,12 +5,15 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 // Importações
 import App from './App.jsx';
-import Home from './pages/Home.jsx'; // <-- IMPORTA A NOVA HOME
+import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
-import ProtectedRoute from './components/ProtectedRoute.jsx'; // <-- O Guardião
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+import MainLayout from './components/MainLayout.jsx';
+import Comparar from './pages/Comparar.jsx'; 
+import ComparacaoDetalhe from './pages/ComparacaoDetalhe.jsx';
 
 import './index.css';
 
@@ -32,17 +35,29 @@ const router = createBrowserRouter([
   
   // --- ROTAS PROTEGIDAS (Com a barra de navegação) ---
   {
-    element: <ProtectedRoute />, // O "Guardião"
+    element: <ProtectedRoute />, // 1. O Guardião (Verifica se está logado)
     children: [
       {
-        element: <App />, // O "Layout" que tem a nav bar
+        element: <App />, // 2. O Layout do Header (Barra Azul)
         children: [
           {
-            path: '/dashboard', // O Dashboard agora é /dashboard
-            element: <Dashboard />,
-          },
-          // Ex: { path: '/perfil', element: <Perfil /> }
-          // (Qualquer outra página logada iria aqui)
+            element: <MainLayout />, // 3. O Layout de 3 Colunas
+            children: [
+              {
+                path: '/dashboard', // A página de "Procurar"
+                element: <Dashboard />,
+              },
+              {
+                path: '/comparar', // A nova página de seleção
+                element: <Comparar />,
+              },
+              {
+                // A nova página de detalhes (com IDs dinâmicos)
+                path: '/comparar/:id1/:id2', 
+                element: <ComparacaoDetalhe />,
+              }
+            ]
+          }
         ]
       }
     ]

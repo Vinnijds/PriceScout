@@ -189,6 +189,37 @@ app.get('/dashboard', authenticateToken, async (req, res) => {
   }
 });
 
+app.get('/products/:id', authenticateToken, async (req, res) => {
+  const { id: produtoId } = req.params;
+
+  try {
+    // Mesma lógica do dashboard, mas para um ID
+    const query = `
+      SELECT 
+        p.*, 
+        (
+          SELECT COALESCE(json_agg(o.*), '[]') 
+          FROM Ofertas o 
+          WHERE o.produto_id = p.id
+        ) as ofertas
+      FROM Produtos p
+      WHERE p.id = $1;
+    `;
+    
+    const result = await db.query(query, [produtoId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Produto não encontrado.' });
+    }
+
+    res.json(result.rows[0]); // Retorna o primeiro (e único) produto
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro interno do servidor.' });
+  }
+});
+
 // Inicia o servidor
 app.listen(PORT, () => {
   console.log(`Servidor da API rodando em http://localhost:${PORT}`);
