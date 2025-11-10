@@ -24,7 +24,7 @@ function App() {
       {/* === NOVO HEADER === */}
       <header style={styles.header}>
         <div style={styles.headerContent}>
-          
+
           {/* Logo */}
           <Link to="/dashboard" style={styles.logo}>
             {/* Usando o mesmo logo da Home, mas podemos trocar */}
@@ -43,13 +43,20 @@ function App() {
           </div>
 
           {/* Info do Usuário */}
-          <div style={styles.userInfo}>
+          <div
+            style={{ ...styles.userInfo, cursor: 'pointer' }} // <-- Adiciona cursor
+            onClick={() => navigate('/perfil')} // <-- Adiciona navegação
+            title="Ver Perfil"
+          >
             <FaUserCircle size={24} style={styles.userAvatar} />
             <span style={styles.userName}>{user.nome}</span>
-            <FaSignOutAlt 
-              size={20} 
-              style={styles.logoutIcon} 
-              onClick={handleLogout} 
+            <FaSignOutAlt
+              size={20}
+              style={styles.logoutIcon}
+              onClick={(e) => {
+                e.stopPropagation(); // Impede que o clique no "Sair" vá para o perfil
+                handleLogout();
+              }}
               title="Sair"
             />
           </div>

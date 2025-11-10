@@ -1,8 +1,6 @@
-// src/components/MainLayout.jsx
 import React from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-// (Pule AlertasRecentes se você ainda não o criou)
-// import AlertasRecentes from './AlertasRecentes';
+// import AlertasRecentes from './AlertasRecentes'; // Mantenha comentado se ainda não criou
 import LojasMonitoradas from './LojasMonitoradas';
 import { FaSearch, FaExchangeAlt } from 'react-icons/fa';
 
@@ -15,7 +13,6 @@ function MainLayout() {
       
       {/* === COLUNA ESQUERDA (NAV) === */}
       <div style={styles.leftNavColumn}>
-        {/* Adicionamos os dois botões, como na sua imagem */}
         <div style={styles.navCard} onClick={() => navigate('/dashboard')}>
           <FaSearch size={20} color="#555" />
           <span style={styles.navTitle}>Procurar Notebooks</span>
@@ -42,7 +39,7 @@ function MainLayout() {
   );
 }
 
-// Estilos (copiados do Dashboard.jsx)
+// Estilos
 const styles = {
   dashboardContainer: {
     display: 'grid',

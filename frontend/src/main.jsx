@@ -14,6 +14,7 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 import MainLayout from './components/MainLayout.jsx';
 import Comparar from './pages/Comparar.jsx'; 
 import ComparacaoDetalhe from './pages/ComparacaoDetalhe.jsx';
+import Perfil from './pages/Perfil.jsx';
 
 import './index.css';
 
@@ -55,7 +56,11 @@ const router = createBrowserRouter([
                 // A nova página de detalhes (com IDs dinâmicos)
                 path: '/comparar/:id1/:id2', 
                 element: <ComparacaoDetalhe />,
-              }
+              },
+              {
+            path: '/perfil',
+            element: <Perfil />,
+          }
             ]
           }
         ]
