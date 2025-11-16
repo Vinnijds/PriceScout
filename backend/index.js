@@ -1,10 +1,12 @@
-// index.js
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const db = require('./db'); // Nosso módulo de conexão
+const db = require('./db'); // Módulo de conexão
+
+// Importa o módulo do scraper
+const scraper = require('./scraper/run');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -12,212 +14,179 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Middlewares
+// --- Middleware de Autenticação ---
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-
-  if (token == null) {
-    return res.sendStatus(401); // Não autorizado (sem token)
-  }
+  const token = authHeader && authHeader.split(' ')[1];
+  if (token == null) return res.sendStatus(401);
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.sendStatus(403); // Proibido (token inválido)
-    }
-
-    // Importante: Adiciona os dados do usuário (ex: id) na requisição
+    if (err) return res.sendStatus(403);
     req.user = user; 
-    next(); // Continua para a rota protegida
+    next();
   });
 };
 
-// ROTA DE TESTE
-app.get('/', (req, res) => {
-  res.json({ message: 'A API do Radar de Ofertas está no ar! 🚀' });
-});
+app.get('/', (req, res) => res.json({ message: 'API PriceScout Online 🚀' }));
 
-// --- ROTAS DE AUTENTICAÇÃO ---
+// --- ROTAS DE USUÁRIO ---
 
-// RF-001: Cadastro de Usuário
 app.post('/users/register', async (req, res) => {
   const { nome, email, senha } = req.body;
-
-  if (!nome || !email || !senha) {
-    return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
-  }
-
+  if (!nome || !email || !senha) return res.status(400).json({ error: 'Campos obrigatórios.' });
   try {
-    // Criptografa a senha
     const senhaHash = await bcrypt.hash(senha, 10);
-
     const result = await db.query(
       'INSERT INTO Usuarios (nome, email, senha_hash) VALUES ($1, $2, $3) RETURNING id, email',
       [nome, email, senhaHash]
     );
-
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    if (err.code === '23505') { // Código de violação de constraint (email único)
-      return res.status(409).json({ error: 'Este e-mail já está cadastrado.' });
-    }
+    if (err.code === '23505') return res.status(409).json({ error: 'E-mail já cadastrado.' });
     console.error(err);
-    res.status(500).json({ error: 'Erro interno do servidor.' });
+    res.status(500).json({ error: 'Erro interno.' });
   }
 });
 
-// RF-002: Login de Usuário
 app.post('/users/login', async (req, res) => {
   const { email, senha } = req.body;
-
   try {
-    // 1. Encontrar o usuário
     const result = await db.query('SELECT * FROM Usuarios WHERE email = $1', [email]);
     const user = result.rows[0];
-
-    if (!user) {
-      return res.status(401).json({ error: 'E-mail ou senha inválidos.' });
+    if (!user || !(await bcrypt.compare(senha, user.senha_hash))) {
+      return res.status(401).json({ error: 'Credenciais inválidas.' });
     }
-
-    // 2. Verificar a senha
-    const senhaValida = await bcrypt.compare(senha, user.senha_hash);
-    if (!senhaValida) {
-      return res.status(401).json({ error: 'E-mail ou senha inválidos.' });
-    }
-
-    // 3. Gerar o Token JWT
     const token = jwt.sign(
-      { userId: user.id, email: user.email }, // O que vai dentro do token
-      process.env.JWT_SECRET,                  // A chave secreta
-      { expiresIn: '1h' }                      // Tempo de expiração
+        { userId: user.id, email: user.email, nome: user.nome }, 
+        process.env.JWT_SECRET, 
+        { expiresIn: '2h' }
     );
-
-    res.json({
-      message: 'Login bem-sucedido!',
-      token: token,
-      user: { id: user.id, nome: user.nome, email: user.email }
-    });
-
+    res.json({ token, user: { id: user.id, nome: user.nome, email: user.email } });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Erro interno do servidor.' });
+    res.status(500).json({ error: 'Erro interno.' });
   }
 });
 
-// --- (Rotas protegidas virão aqui) ---
+// --- ROTAS PROTEGIDAS (AÇÕES DO APP) ---
 
-// RF-003: Listar TODOS os 5 produtos monitorados
+// [NOVO] Rota para ADICIONAR um novo produto ao banco
+app.post('/products/add', authenticateToken, async (req, res) => {
+    const { nome_produto, termo_busca, cpu_base, ram_base, armazenamento_base, tela_base } = req.body;
+    const { userId } = req.user;
+
+    if (!nome_produto || !termo_busca) {
+        return res.status(400).json({ error: 'Nome e Termo de Busca são obrigatórios.' });
+    }
+
+    // Usamos 'WITH' para fazer duas coisas: Inserir o produto E fazer o usuário segui-lo.
+    const query = `
+        WITH novo_produto AS (
+            INSERT INTO Produtos (
+                nome_produto, termo_busca, cpu_base, ram_base, armazenamento_base, tela_base
+            ) VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id
+        )
+        INSERT INTO Usuarios_Seguindo (usuario_id, produto_id, preco_desejado)
+        VALUES ($7, (SELECT id FROM novo_produto), NULL)
+        RETURNING produto_id;
+    `;
+
+    try {
+        const result = await db.query(query, [
+            nome_produto, termo_busca, cpu_base || null, ram_base || null, 
+            armazenamento_base || null, tela_base || null, userId
+        ]);
+        res.status(201).json({ message: 'Produto adicionado e monitorado!', produto: result.rows[0] });
+    } catch (err) {
+        console.error("Erro ao adicionar produto:", err);
+        res.status(500).json({ error: 'Falha ao adicionar produto.' });
+    }
+});
+
+// [NOVO] Rota para DISPARAR o scraper manualmente
+app.post('/api/run-scraper', authenticateToken, async (req, res) => {
+  if (!scraper || !scraper.executarScraper) {
+    return res.status(500).json({ error: 'Serviço de scraper indisponível.' });
+  }
+  
+  console.log(`[API] Usuário ${req.user.nome} solicitou atualização de preços.`);
+  try {
+    // Executa o scraper
+    const resultado = await scraper.executarScraper();
+    res.json({ message: `Varredura concluída! ${resultado.total} ofertas atualizadas.`, detalhes: resultado });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Falha na execução do scraper.' });
+  }
+});
+
+// Rota para Listar TODOS os produtos (para a antiga lista "Disponível")
 app.get('/products', authenticateToken, async (req, res) => {
   try {
     const result = await db.query('SELECT * FROM Produtos ORDER BY nome_produto');
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Erro interno do servidor.' });
+    res.status(500).json({ error: 'Erro ao buscar produtos.' });
   }
 });
 
-// RF-004: Seguir um produto (e definir preço - RF-005)
-app.post('/products/:id/follow', authenticateToken, async (req, res) => {
-  const { id: produtoId } = req.params;
-  const { userId } = req.user; // Pego do middleware (authenticateToken)
-  const { precoDesejado } = req.body; // Pega o preço do corpo da requisição
-
-  try {
-    // Usamos ON CONFLICT para fazer um "UPSERT" (Update ou Insert)
-    // Se o usuário já segue, apenas atualiza o preço. Se não, insere.
-    const result = await db.query(
-      `INSERT INTO Usuarios_Seguindo (usuario_id, produto_id, preco_desejado) 
-       VALUES ($1, $2, $3)
-       ON CONFLICT (usuario_id, produto_id) 
-       DO UPDATE SET preco_desejado = $3
-       RETURNING *`,
-      [userId, produtoId, precoDesejado || null] // Usa null se o preço não for enviado
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erro interno do servidor.' });
-  }
+// Rota para Detalhes do Produto + Ofertas
+app.get('/products/:id', authenticateToken, async (req, res) => {
+    try {
+      const query = `
+        SELECT p.*, 
+        (SELECT COALESCE(json_agg(o.* ORDER BY o.preco_atual ASC), '[]') FROM Ofertas o WHERE o.produto_id = p.id) as ofertas
+        FROM Produtos p WHERE p.id = $1
+      `;
+      const result = await db.query(query, [req.params.id]);
+      if (result.rows.length === 0) return res.status(404).json({ error: 'Produto não encontrado' });
+      res.json(result.rows[0]);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Erro no servidor.' });
+    }
 });
 
-// RF-006: Deixar de seguir um produto
-app.delete('/products/:id/follow', authenticateToken, async (req, res) => {
-  const { id: produtoId } = req.params;
-  const { userId } = req.user;
-
-  try {
-    await db.query(
-      'DELETE FROM Usuarios_Seguindo WHERE usuario_id = $1 AND produto_id = $2',
-      [userId, produtoId]
-    );
-    res.sendStatus(204); // "No Content" (sucesso sem corpo de resposta)
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erro interno do servidor.' });
-  }
-});
-
-
-// RF-007: Ver o Dashboard (produtos seguidos + ofertas)
+// Rota do Dashboard (Produtos que o usuário segue)
 app.get('/dashboard', authenticateToken, async (req, res) => {
-  const { userId } = req.user;
-
   try {
-    // Query complexa para buscar os produtos que o usuário segue E
-    // fazer um sub-select (em JSON) de todas as ofertas ativas para CADA produto.
     const query = `
-      SELECT 
-        p.*, 
-        us.preco_desejado,
-        (
-          SELECT COALESCE(json_agg(o.*), '[]') 
-          FROM Ofertas o 
-          WHERE o.produto_id = p.id
-        ) as ofertas
+      SELECT p.*, us.preco_desejado,
+      (SELECT COALESCE(json_agg(o.* ORDER BY o.preco_atual ASC), '[]') FROM Ofertas o WHERE o.produto_id = p.id) as ofertas
       FROM Usuarios_Seguindo us
       JOIN Produtos p ON us.produto_id = p.id
-      WHERE us.usuario_id = $1;
+      WHERE us.usuario_id = $1
+      ORDER BY p.nome_produto;
     `;
-
-    const result = await db.query(query, [userId]);
+    const result = await db.query(query, [req.user.userId]);
     res.json(result.rows);
-
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Erro interno do servidor.' });
+    res.status(500).json({ error: 'Erro ao carregar dashboard.' });
   }
 });
 
-app.get('/products/:id', authenticateToken, async (req, res) => {
-  const { id: produtoId } = req.params;
-
+// Seguir / Editar Preço
+app.post('/products/:id/follow', authenticateToken, async (req, res) => {
+  const { precoDesejado } = req.body;
   try {
-    // Mesma lógica do dashboard, mas para um ID
-    const query = `
-      SELECT 
-        p.*, 
-        (
-          SELECT COALESCE(json_agg(o.*), '[]') 
-          FROM Ofertas o 
-          WHERE o.produto_id = p.id
-        ) as ofertas
-      FROM Produtos p
-      WHERE p.id = $1;
-    `;
-    
-    const result = await db.query(query, [produtoId]);
+    await db.query(
+      `INSERT INTO Usuarios_Seguindo (usuario_id, produto_id, preco_desejado) VALUES ($1, $2, $3)
+       ON CONFLICT (usuario_id, produto_id) DO UPDATE SET preco_desejado = $3`,
+      [req.user.userId, req.params.id, precoDesejado || null]
+    );
+    res.status(200).json({ message: 'Seguindo produto.' });
+  } catch (err) { res.status(500).json({ error: 'Erro ao seguir.' }); }
+});
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Produto não encontrado.' });
-    }
-
-    res.json(result.rows[0]); // Retorna o primeiro (e único) produto
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erro interno do servidor.' });
-  }
+// Deixar de Seguir
+app.delete('/products/:id/follow', authenticateToken, async (req, res) => {
+  try {
+    await db.query('DELETE FROM Usuarios_Seguindo WHERE usuario_id = $1 AND produto_id = $2', [req.user.userId, req.params.id]);
+    res.status(204).send();
+  } catch (err) { res.status(500).json({ error: 'Erro ao deixar de seguir.' }); }
 });
 
 // Inicia o servidor
