@@ -65,118 +65,145 @@ function parsePrice(priceStr) {
     return parseFloat(cleanPrice) || 0;
 }
 
+function normalizeText(text) {
+    if (!text) return '';
+    return text
+        .toLowerCase() // Converte para minúsculas
+        .normalize('NFD') // Separa acentos das letras
+        .replace(/[\u0300-\u036f]/g, '') // Remove os acentos
+        .replace(/[^\w\s]/gi, ''); // Remove pontuação (deixa só letras, números e espaços)
+}
+
 
 // --- SCRAPER DA AMAZON (v2 Robusto) ---
 async function buscaAmazon(termo, userAgent) {
-  const results = [];
-  const q = termo.replace(/ /g, "+");
-  const url = `${config.URLS_BASE.amazon}/s?k=${q}`;
-  logger.info(`[Amazon] Buscando: ${termo}...`);
-  
-  const $ = await getSoup(url, userAgent, 'amazon');
-  if (!$) return results;
+  const results = [];
+  const q = termo.replace(/ /g, "+");
+  const url = `${config.URLS_BASE.amazon}/s?k=${q}`;
+  logger.info(`[Amazon] Buscando: ${termo}...`);
+  
+  const $ = await getSoup(url, userAgent, 'amazon');
+  if (!$) return results;
 
-  const items = $('div[data-component-type="s-search-result"]');
-  logger.info(`[Amazon] Seletor principal encontrou ${items.length} itens.`);
+  const items = $('div[data-component-type="s-search-result"]');
+  logger.info(`[Amazon] Seletor principal encontrou ${items.length} itens.`);
 
-  items.slice(0, 5).each((i, el) => {
-    const item = $(el);
+  // *** MUDANÇA AQUI ***
+  // 1. Normaliza o termo de busca (o nome do seu notebook)
+  const normalizedTermo = normalizeText(termo);
+  // 2. Pega as palavras-chave principais (ignora "de", "para", etc.)
+  const keywords = normalizedTermo.split(' ').filter(k => k.length > 2); 
 
-    const title = extractText(item, [
-        'h2 a span' // Seletor principal
-    ]);
-    
-    let link = extractLink(item, [
-        'h2 a.a-link-normal' // Seletor principal
-    ]);
-    if (link && !link.startsWith('http')) {
-        link = "https://www.amazon.com.br" + link;
-    }
-    
-    // Lógica de Preço Robusta (v3)
-    let price = 0;
-    // Tenta o preço principal (ex: "1.200,99")
-    const priceText = item.find(".a-price .a-offscreen").first().text();
-    price = parsePrice(priceText);
-    
-    // Fallback (se o preço principal falhar, tenta o "whole" + "fraction")
-    if (price === 0) {
-        const priceWhole = item.find(".a-price-whole").first().text();
-        const priceFraction = item.find(".a-price-fraction").first().text();
-        if (priceWhole) {
-            price = parsePrice(`${priceWhole},${priceFraction}`);
-        }
-    }
+  // 3. Aumentamos o slice para 10 para ter mais chance de achar
+  items.slice(0, 10).each((i, el) => {
+    const item = $(el);
 
-    const image = extractImage(item, [
-        'img.s-image'
-    ]);
+    const title = extractText(item, [
+        'h2 a span'
+    ]);
+    
+    // ... (extração de link, price, image continua igual) ...
+    // (cole o seu código de extrair price, link e image aqui)
+    let link = extractLink(item, ['h2 a.a-link-normal']);
+    if (link && !link.startsWith('http')) {
+        link = "https://www.amazon.com.br" + link;
+    }
+    let price = 0;
+    const priceText = item.find(".a-price .a-offscreen").first().text();
+    price = parsePrice(priceText);
+    if (price === 0) {
+        const priceWhole = item.find(".a-price-whole").first().text();
+        const priceFraction = item.find(".a-price-fraction").first().text();
+        if (priceWhole) {
+            price = parsePrice(`${priceWhole},${priceFraction}`);
+        }
+    }
+    const image = extractImage(item, ['img.s-image']);
+    // ... (fim do trecho colado)
 
-    if (title && price > 0 && link) {
-        logger.info(`[Amazon] Encontrado: ${title.substring(0, 30)}... (R$ ${price})`);
-        results.push({ loja: 'Amazon', title, price, link, image });
-    } else if (title) {
-        logger.warn(`[Amazon] Item pulado (sem preço?): ${title.substring(0, 30)}...`);
-    }
-  });
-  return results;
+    // *** ESTE É O NOVO FILTRO ***
+    if (title && price > 0 && link) {
+        const normalizedTitle = normalizeText(title);
+
+        // 4. Verifica se o título do resultado contém TODAS as palavras-chave
+        const hasAllKeywords = keywords.every(key => normalizedTitle.includes(key));
+
+        if (hasAllKeywords) {
+            logger.info(`[Amazon] Encontrado (Match): ${title.substring(0, 30)}... (R$ ${price})`);
+            results.push({ loja: 'Amazon', title, price, link, image });
+        } else {
+            // Opcional: logar por que pulou
+            // logger.warn(`[Amazon] Item pulado (não bate com keywords): ${title.substring(0, 30)}...`);
+        }
+    } else if (title) {
+        logger.warn(`[Amazon] Item pulado (sem preço?): ${title.substring(0, 30)}...`);
+    }
+  });
+  return results;
 }
 
 // --- SCRAPER DO MERCADO LIVRE (v2 Robusto) ---
 async function buscaMercadoLivre(termo, userAgent) {
-  const results = [];
-  const q = termo.replace(/ /g, "-");
-  const url = `${config.URLS_BASE.mercadolivre}/${q}_Desde_1`;
-  logger.info(`[MercadoLivre] Buscando: ${termo}...`);
+  const results = [];
+  const q = termo.replace(/ /g, "-");
+  const url = `${config.URLS_BASE.mercadolivre}/${q}_Desde_1`;
+  logger.info(`[MercadoLivre] Buscando: ${termo}...`);
 
-  const $ = await getSoup(url, userAgent, 'mercadolivre');
-  if (!$) return results;
+  const $ = await getSoup(url, userAgent, 'mercadolivre');
+  if (!$) return results;
 
-  const items = $("li.ui-search-layout__item, div.ui-search-result__wrapper, div.andes-card");
-  logger.info(`[MercadoLivre] Seletor principal encontrou ${items.length} itens.`);
+  const items = $("li.ui-search-layout__item, div.ui-search-result__wrapper, div.andes-card");
+  logger.info(`[MercadoLivre] Seletor principal encontrou ${items.length} itens.`);
 
-  items.slice(0, 5).each((i, el) => {
-    const item = $(el);
+  // *** MUDANÇA AQUI ***
+  const normalizedTermo = normalizeText(termo);
+  const keywords = normalizedTermo.split(' ').filter(k => k.length > 2);
 
-    const title = extractText(item, [
-        'h2.ui-search-item__title', // Seletor 1
-        'a.poly-component__title'   // Seletor 2 (fallback)
-    ]);
-    
-    const link = extractLink(item, [
-        'a.ui-search-link',         // Seletor 1
-        'a.poly-component__title'   // Seletor 2 (fallback)
-    ]);
+  items.slice(0, 10).each((i, el) => {
+    const item = $(el);
 
-    // Lógica de Preço Robusta (v3)
-    // Pega o símbolo (R$) e a fração (1.234)
-    const symbol = item.find(".andes-money-amount__currency-symbol").first().text();
-    const priceText = item.find(".andes-money-amount__fraction").first().text();
-    
-    let price = 0;
-    if (priceText) {
-        price = parsePrice(priceText);
-    }
-    
-    // Se o preço for R$ (símbolo) mas o valor for 0, tenta outro seletor
-    if (price === 0 && symbol === "R$") {
-        const altPrice = item.find("span.raw-price, span.price-tag-fraction").first().text();
-        price = parsePrice(altPrice);
-    }
+    const title = extractText(item, [
+        'h2.ui-search-item__title',
+        'a.poly-component__title'
+    ]);
+    
+    // ... (extração de link, price, image continua igual) ...
+    // (cole o seu código de extrair price, link e image aqui)
+    const link = extractLink(item, ['a.ui-search-link', 'a.poly-component__title']);
+    const symbol = item.find(".andes-money-amount__currency-symbol").first().text();
+    const priceText = item.find(".andes-money-amount__fraction").first().text();
+    let price = 0;
+    if (priceText) {
+        price = parsePrice(priceText);
+    }
+    if (price === 0 && symbol === "R$") {
+        const altPrice = item.find("span.raw-price, span.price-tag-fraction").first().text();
+        price = parsePrice(altPrice);
+    }
+    const image = extractImage(item, [
+        'img.ui-search-result-image__element',
+        'img.poly-component__picture',
+        'img.andes-carousel-snapped__img' // Aquele que adicionamos antes
+    ]);
+    // ... (fim do trecho colado)
 
-    const image = extractImage(item, [
-        'img.ui-search-result-image__element', // Seletor 1
-        'img.poly-component__picture'          // Seletor 2
-    ]);
+    // *** ESTE É O NOVO FILTRO ***
+    if (title && price > 0 && link) {
+        const normalizedTitle = normalizeText(title);
 
-    if (title && price > 0 && link) {
-        logger.info(`[MercadoLivre] Encontrado: ${title.substring(0, 30)}... (R$ ${price})`);
-        results.push({ loja: 'Mercado Livre', title, price, link, image });
-    } else if (title) {
-        logger.warn(`[MercadoLivre] Item pulado (sem preço?): ${title.substring(0, 30)}...`);
-    }
-  });
-  return results;
+        const hasAllKeywords = keywords.every(key => normalizedTitle.includes(key));
+
+        if (hasAllKeywords) {
+            logger.info(`[MercadoLivre] Encontrado (Match): ${title.substring(0, 30)}... (R$ ${price})`);
+            results.push({ loja: 'Mercado Livre', title, price, link, image });
+        } else {
+            // logger.warn(`[MercadoLivre] Item pulado (não bate com keywords): ${title.substring(0, 30)}...`);
+        }
+    } else if (title) {
+        logger.warn(`[MercadoLivre] Item pulado (sem preço?): ${title.substring(0, 30)}...`);
+    }
+  });
+  return results;
 }
 
 module.exports = { buscaAmazon, buscaMercadoLivre, sleep };
