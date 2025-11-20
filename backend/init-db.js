@@ -1,7 +1,5 @@
-// init-db.js
 const { Client } = require('pg');
 
-// ATENÇÃO: Use suas credenciais
 const connectionString = 'postgresql://radar_admin:root@localhost:5432/radar_db';
 
 const client = new Client({ connectionString });
@@ -50,7 +48,16 @@ const createTablesQuery = `
   CREATE TABLE IF NOT EXISTS Usuarios_Seguindo (
     usuario_id INT REFERENCES Usuarios(id) ON DELETE CASCADE,
     produto_id INT REFERENCES Produtos(id) ON DELETE CASCADE,
-    preco_desejado NUMERIC(10, 2),
+    
+    preco_maximo_desejado NUMERIC(10, 2),
+    ram_desejada VARCHAR(50), 
+    armazenamento_desejado VARCHAR(50),
+    memoria_tipo_desejada VARCHAR(50), 
+    gpu_tipo_desejada VARCHAR(50),
+    cpu_modelo_desejado VARCHAR(50),
+    so_desejado VARCHAR(50),
+    tela_tipo_desejada VARCHAR(50),
+    
     PRIMARY KEY (usuario_id, produto_id)
   );
 `;
@@ -63,8 +70,6 @@ async function setupDatabase() {
     await client.query(createTablesQuery);
     console.log('Tabelas criadas com sucesso (ou já existiam)!');
 
-    // Opcional: Popular a tabela Produtos
-    // (Isso deve ser feito apenas UMA vez)
     await client.query(`
       INSERT INTO Produtos (nome_produto, termo_busca, cpu_base, ram_base, armazenamento_base, tela_base)
       VALUES 

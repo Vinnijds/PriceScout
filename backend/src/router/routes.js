@@ -1,0 +1,30 @@
+// backend/src/router/routes.js
+const express = require('express');
+const router = express.Router();
+const db = require('../../db');
+const monitoramentoController = require('../controllers/MonitoramentoController'); 
+
+// --- Rotas de Dashboard/Monitoramento ---
+
+// Rota GET: /dashboard
+router.get('/dashboard', monitoramentoController.getProdutosMonitorados);
+
+// Rota POST: /api/run-scraper
+router.post('/api/run-scraper', monitoramentoController.runScraper);
+
+
+// --- Rotas de Produto (para Procurar.jsx) ---
+
+// Rota GET: /products/all (Lista os 5 produtos fixos)
+router.get('/products/all', async (req, res) => {
+    try {
+        const { rows } = await db.query('SELECT * FROM Produtos');
+        return res.json(rows);
+    } catch (error) {
+        console.error("Erro ao buscar todos os produtos:", error.stack);
+        return res.status(500).json({ message: "Erro interno ao buscar produtos." });
+    }
+});
+
+
+module.exports = router;

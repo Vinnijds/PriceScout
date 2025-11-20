@@ -1,0 +1,7 @@
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #f4f6f8; /* Cor de fundo cinza claro igual aos prints */
+  font-family: 'Inter', sans-serif; /* Ou a fonte que você usa */
+  overflow-x: hidden; /* Evita rolagem horizontal indesejada */
+}

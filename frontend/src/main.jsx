@@ -1,20 +1,23 @@
-// src/main.jsx (NOVA ESTRUTURA DE ROTAS)
+// src/main.jsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
-// Importações
+// Importações de Páginas
 import App from './App.jsx';
 import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import Dashboard from './pages/Dashboard.jsx';
-import { AuthProvider } from './context/AuthContext.jsx';
-import ProtectedRoute from './components/ProtectedRoute.jsx';
-import MainLayout from './components/MainLayout.jsx';
 import Comparar from './pages/Comparar.jsx'; 
 import ComparacaoDetalhe from './pages/ComparacaoDetalhe.jsx';
 import Perfil from './pages/Perfil.jsx';
+import Procurar from './pages/Procurar.jsx'; // <-- IMPORTAÇÃO DA NOVA PÁGINA
+
+// Importações de Componentes/Contexto
+import { AuthProvider } from './context/AuthContext.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+import MainLayout from './components/MainLayout.jsx';
 
 import './index.css';
 
@@ -23,7 +26,7 @@ const router = createBrowserRouter([
   // --- ROTAS PÚBLICAS (Sem a barra de navegação) ---
   {
     path: '/',
-    element: <Home />, // A nova página inicial
+    element: <Home />, // A página inicial
   },
   {
     path: '/login',
@@ -45,22 +48,25 @@ const router = createBrowserRouter([
             element: <MainLayout />, // 3. O Layout de 3 Colunas
             children: [
               {
-                path: '/dashboard', // A página de "Procurar"
+                path: '/dashboard', 
                 element: <Dashboard />,
+              },
+              {
+                path: '/procurar', // <-- ROTA ADICIONADA AQUI
+                element: <Procurar />,
               },
               {
                 path: '/comparar', // A nova página de seleção
                 element: <Comparar />,
               },
               {
-                // A nova página de detalhes (com IDs dinâmicos)
-                path: '/comparar/:id1/:id2', 
+                path: '/comparar/:id1/:id2', // A nova página de detalhes (com IDs dinâmicos)
                 element: <ComparacaoDetalhe />,
               },
               {
-            path: '/perfil',
-            element: <Perfil />,
-          }
+                path: '/perfil',
+                element: <Perfil />,
+              }
             ]
           }
         ]

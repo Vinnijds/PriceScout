@@ -101,7 +101,7 @@ function Perfil() {
       <div style={styles.card}>
         <h2 style={styles.cardTitle}>Mude sua senha</h2>
         <form onSubmit={handleUpdatePassword}>
-          <div style={styles.formField} style={{marginBottom: '15px'}}>
+          <div style={{...styles.formField, marginBottom: '15px'}}>
             <input 
               type="password" 
               placeholder="Inserir senha atual" 
