@@ -2,12 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import MonitoradosGrid from '../components/MonitoradosGrid.jsx';
-import { FaSync } from 'react-icons/fa'; // Ícone de refresh
 
 // --- Funções Auxiliares ---
 function formatCurrency(value) {
   if (value === null || value === undefined || isNaN(Number(value))) return 'N/D';
-  // Note: O código real do projeto pode estar mais complexo aqui.
   return Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 function getMelhorOferta(ofertas) {
@@ -20,7 +18,6 @@ function getMelhorOferta(ofertas) {
 function Dashboard() {
   const [produtosSeguidos, setProdutosSeguidos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -38,22 +35,7 @@ function Dashboard() {
     fetchData();
   }, []);
 
-  const handleUpdatePrices = async () => {
-    setUpdating(true);
-    try {
-      const res = await api.post('/api/run-scraper');
-      alert(res.data.message || "Varredura concluída!");
-      fetchData();
-    } catch (err) {
-      alert("Erro ao atualizar preços. Veja o console do backend.");
-      console.error(err);
-    } finally {
-      setUpdating(false);
-    }
-  };
-
   const handleEditPrice = async (produtoId) => {
-    // Esta função será ajustada para abrir o Modal de Filtro no futuro
     alert("Função de edição de filtro detalhado será implementada aqui.");
   };
 
@@ -69,19 +51,6 @@ function Dashboard() {
 
   return (
     <>
-      {/* Botão de Atualizar Preços */}
-      <div style={styles.headerAction}>
-        <h2 style={styles.pageTitle}>Meus Monitoramentos</h2>
-        <button 
-          onClick={handleUpdatePrices} 
-          disabled={updating}
-          style={{...styles.updateBtn, opacity: updating ? 0.7 : 1}}
-        >
-          <FaSync className={updating ? "spin" : ""} style={{marginRight: 8}} />
-          {updating ? "Atualizando..." : "Atualizar Preços Agora"}
-        </button>
-      </div>
-
       {/* Seção 1: Grid de Produtos Seguidos */}
       <MonitoradosGrid 
         produtos={produtosSeguidos} 
@@ -111,7 +80,6 @@ function Dashboard() {
                 </tr>
             ) : produtosSeguidos.map(p => {
               const oferta = getMelhorOferta(p.ofertas);
-              // Adaptação para usar preco_maximo_desejado ou preco_desejado
               const precoDesejado = p.preco_maximo_desejado || p.preco_desejado; 
               
               return (
@@ -130,13 +98,6 @@ function Dashboard() {
           </tbody>
         </table>
       </div>
-
-      {/* Seção 3: Formulário para Adicionar Novos Produtos -> REMOVIDA */}
-      
-      <style>{`
-        .spin { animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-      `}</style>
     </>
   );
 }
@@ -144,13 +105,6 @@ function Dashboard() {
 // --- Estilos ---
 const styles = {
   loading: { padding: 50, textAlign: 'center', color: '#666', fontSize: 18 },
-  headerAction: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  pageTitle: { fontSize: 24, color: '#333', margin: 0 },
-  updateBtn: { 
-    backgroundColor: '#27ae60', color: 'white', border: 'none', padding: '10px 20px', 
-    borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: 14,
-    transition: 'background-color 0.2s'
-  },
   section: { backgroundColor: 'white', padding: 25, borderRadius: 10, boxShadow: '0 2px 5px rgba(0,0,0,0.05)', marginTop: 20 },
   title: { fontSize: 18, marginBottom: 15, color: '#333', borderBottom: '1px solid #eee', paddingBottom: 10 },
   table: { width: '100%', borderCollapse: 'collapse' },

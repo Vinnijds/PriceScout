@@ -1,107 +1,201 @@
-// src/pages/Register.jsx (VERSÃO FINAL COM NOVO ESTILO)
-
-import React, { useState } from 'react';
+// src/pages/Register.jsx
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
-import api from '../services/api'; // Usar o 'api' service
+import api from '../services/api';
 
 function Register() {
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
-  const [repitaSenha, setRepitaSenha] = useState(''); // Novo estado para o campo "Repita sua senha"
+  const [repitaSenha, setRepitaSenha] = useState('');
   const [error, setError] = useState(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [isSmallMobile, setIsSmallMobile] = useState(window.innerWidth <= 480);
   
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+      setIsSmallMobile(window.innerWidth <= 480);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
 
-    // --- NOVA VALIDAÇÃO ---
-    // 1. Verifica se as senhas são iguais
     if (senha !== repitaSenha) {
       setError('As senhas não conferem.');
-      return; // Para a execução
+      return;
     }
-    // --- FIM DA VALIDAÇÃO ---
 
     try {
-      // 2. Chama a API correta (/users/register)
-      // O 'nome' é necessário para o backend
       await api.post('/users/register', { nome, email, senha }); 
-
-      // 3. Se deu certo, avisa e redireciona para o Login
       alert('Cadastro realizado com sucesso!');
       navigate('/login');
-
     } catch (err) {
-      // 4. Se deu errado, pega a mensagem de erro da API
       if (err.response && err.response.data.error) {
-        setError(err.response.data.error); // Ex: "Este e-mail já está cadastrado."
+        setError(err.response.data.error);
       } else {
         setError('Erro ao se cadastrar. Tente novamente.');
       }
     }
   };
 
+  const styles = {
+    container: {
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      minHeight: '100vh',
+      backgroundColor: '#fff',
+      fontFamily: "'Arial', sans-serif",
+      padding: isMobile ? '15px' : '20px',
+      position: 'relative',
+    },
+    backArrow: {
+      position: 'absolute',
+      top: isMobile ? '15px' : '20px',
+      left: isMobile ? '15px' : '20px',
+      fontSize: isMobile ? '20px' : '24px',
+      color: '#131A4C',
+      cursor: 'pointer',
+      zIndex: 10,
+    },
+    content: {
+      width: '100%',
+      maxWidth: isMobile ? '100%' : '420px',
+      textAlign: 'center',
+    },
+    title: {
+      fontSize: isSmallMobile ? '22px' : isMobile ? '24px' : '28px',
+      color: '#131A4C',
+      marginBottom: isSmallMobile ? '30px' : '40px',
+      fontWeight: 'bold',
+    },
+    form: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '18px',
+      marginBottom: '25px',
+    },
+    label: {
+      textAlign: 'left',
+      fontSize: isMobile ? '13px' : '14px',
+      color: '#131A4C',
+      marginBottom: '5px',
+      fontWeight: '600',
+      display: 'block',
+    },
+    input: {
+      padding: isMobile ? '12px 15px' : '14px 18px',
+      borderRadius: '8px',
+      border: '1px solid #e0e0e0',
+      fontSize: isMobile ? '15px' : '16px',
+      width: '100%',
+      backgroundColor: '#f5f5f5',
+      boxSizing: 'border-box',
+      outline: 'none',
+    },
+    button: {
+      padding: isSmallMobile ? '10px 15px' : isMobile ? '11px 20px' : '12px 25px',
+      borderRadius: '8px',
+      border: 'none',
+      backgroundColor: '#131A4C',
+      color: '#fff',
+      fontSize: isMobile ? '16px' : '18px',
+      cursor: 'pointer',
+      fontWeight: 'bold',
+      transition: 'background-color 0.3s ease',
+      width: '100%',
+      marginTop: '5px',
+    },
+    separator: {
+      color: '#aaa',
+      margin: '25px 0',
+      fontSize: isMobile ? '13px' : '14px',
+    },
+    signupText: {
+      fontSize: isMobile ? '14px' : '15px',
+      color: '#555',
+    },
+    signupLink: {
+      color: '#131A4C',
+      fontWeight: 'bold',
+      cursor: 'pointer',
+      textDecoration: 'none',
+    },
+    message: {
+      marginTop: '20px',
+      color: 'red',
+      fontSize: isMobile ? '13px' : '14px',
+    },
+  };
+
   return (
     <div style={styles.container}>
-      {/* A flecha agora leva de volta para a página de login */}
-      <FaArrowLeft style={styles.backArrow} onClick={() => navigate('/')} /> 
+      <FaArrowLeft style={styles.backArrow} onClick={() => navigate('/')} />
 
-      <div style={styles.loginBox}> {/* Reutilizando o estilo do loginBox */}
+      <div style={styles.content}>
         <h2 style={styles.title}>Crie sua conta</h2>
 
         <form onSubmit={handleSubmit} style={styles.form}>
-          
-          {/* --- CAMPO "NOME" (Necessário para o backend) --- */}
-          <label htmlFor="nome" style={styles.label}>Nome</label>
-          <input
-            type="text"
-            id="nome"
-            placeholder="Digite seu nome"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            required
-            style={styles.input}
-          />
-          {/* --- FIM DO CAMPO "NOME" --- */}
+          <div>
+            <label htmlFor="nome" style={styles.label}>Nome</label>
+            <input
+              type="text"
+              id="nome"
+              placeholder="Digite seu nome"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              required
+              style={styles.input}
+            />
+          </div>
 
-          <label htmlFor="email" style={styles.label}>E-mail</label>
-          <input
-            type="email"
-            id="email"
-            placeholder="Digite seu e-mail"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={styles.input}
-          />
+          <div>
+            <label htmlFor="email" style={styles.label}>E-mail</label>
+            <input
+              type="email"
+              id="email"
+              placeholder="Digite seu e-mail"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              style={styles.input}
+            />
+          </div>
 
-          <label htmlFor="password" style={styles.label}>Senha</label>
-          <input
-            type="password"
-            id="password"
-            placeholder="Digite sua senha"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            required
-            style={styles.input}
-          />
+          <div>
+            <label htmlFor="password" style={styles.label}>Senha</label>
+            <input
+              type="password"
+              id="password"
+              placeholder="Digite sua senha"
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              required
+              style={styles.input}
+            />
+          </div>
 
-          {/* --- CAMPO "REPITA SUA SENHA" (Do novo design) --- */}
-          <label htmlFor="repitaSenha" style={styles.label}>Repita sua senha</label>
-          <input
-            type="password"
-            id="repitaSenha"
-            placeholder="Repita sua senha"
-            value={repitaSenha}
-            onChange={(e) => setRepitaSenha(e.target.value)}
-            required
-            style={styles.input}
-          />
-          {/* --- FIM DO CAMPO --- */}
+          <div>
+            <label htmlFor="repitaSenha" style={styles.label}>Repita sua senha</label>
+            <input
+              type="password"
+              id="repitaSenha"
+              placeholder="Repita sua senha"
+              value={repitaSenha}
+              onChange={(e) => setRepitaSenha(e.target.value)}
+              required
+              style={styles.input}
+            />
+          </div>
 
           <button type="submit" style={styles.button}>Cadastrar</button>
         </form>
@@ -117,91 +211,5 @@ function Register() {
     </div>
   );
 }
-
-// --- ESTILOS CSS INLINE ---
-// (São idênticos aos da tela de Login, para manter a consistência)
-const styles = {
-  container: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: '100vh', 
-    backgroundColor: '#f0f2f5', 
-    fontFamily: 'Arial, sans-serif',
-    position: 'relative', 
-  },
-  backArrow: {
-    position: 'absolute',
-    top: '20px',
-    left: '20px',
-    fontSize: '24px',
-    color: '#333',
-    cursor: 'pointer',
-  },
-  loginBox: {
-    backgroundColor: '#fff',
-    padding: '40px',
-    borderRadius: '10px',
-    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-    textAlign: 'center',
-    width: '100%',
-    maxWidth: '400px', 
-  },
-  title: {
-    fontSize: '28px',
-    color: '#333',
-    marginBottom: '30px',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '15px', 
-    marginBottom: '20px',
-  },
-  label: {
-    textAlign: 'left',
-    fontSize: '14px',
-    color: '#555',
-    marginBottom: '-10px', 
-  },
-  input: {
-    padding: '12px 15px',
-    borderRadius: '8px',
-    border: '1px solid #ddd',
-    fontSize: '16px',
-    width: 'calc(100% - 30px)', 
-    backgroundColor: '#f7f7f7', 
-  },
-  button: {
-    padding: '12px 25px',
-    borderRadius: '8px',
-    border: 'none',
-    backgroundColor: '#3b5998', 
-    color: '#fff',
-    fontSize: '18px',
-    cursor: 'pointer',
-    marginTop: '10px',
-    transition: 'background-color 0.3s ease',
-  },
-  separator: {
-    color: '#aaa',
-    margin: '20px 0',
-  },
-  signupText: {
-    fontSize: '15px',
-    color: '#555',
-  },
-  signupLink: {
-    color: '#3b5998', 
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    textDecoration: 'none',
-  },
-  message: { // Este é o estilo para a mensagem de erro
-    marginTop: '20px',
-    color: 'red',
-    fontSize: '14px',
-  },
-};
 
 export default Register;

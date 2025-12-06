@@ -1,5 +1,6 @@
 import React from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
+import Header from './Header';
 import LojasMonitoradas from './LojasMonitoradas';
 import { FaSearch, FaExchangeAlt } from 'react-icons/fa';
 
@@ -8,80 +9,91 @@ function MainLayout() {
   const location = useLocation();
 
   return (
-    <div style={styles.dashboardContainer}>
-      
-      {/* === COLUNA ESQUERDA (NAV - FIXA) === */}
-      <aside style={styles.leftNavColumn}>
+    <div style={styles.wrapper}>
+      {/* === HEADER === */}
+      <Header />
+
+      {/* === CONTEÚDO PRINCIPAL === */}
+      <div style={styles.dashboardContainer}>
         
-        <Link to="/procurar" style={{ textDecoration: 'none' }}>
+        {/* === COLUNA ESQUERDA (NAV - FIXA) === */}
+        <aside style={styles.leftNavColumn}>
+          
+          <Link to="/procurar" style={{ textDecoration: 'none' }}>
             <div style={location.pathname === '/procurar' ? styles.navCardActive : styles.navCard}>
-            <FaSearch size={20} color={location.pathname === '/procurar' ? "#3b5998" : "#555"} />
-            <span style={{...styles.navTitle, color: location.pathname === '/procurar' ? "#3b5998" : "#333"}}>
+              <FaSearch size={20} color={location.pathname === '/procurar' ? "#3b5998" : "#555"} />
+              <span style={{...styles.navTitle, color: location.pathname === '/procurar' ? "#3b5998" : "#333"}}>
                 Procurar Notebooks
-            </span>
+              </span>
             </div>
-        </Link>
+          </Link>
 
-        <Link to="/dashboard" style={{ textDecoration: 'none' }}>
-             {/* Se quiser adicionar um botão para Dashboard aqui também */}
-        </Link>
+          <Link to="/dashboard" style={{ textDecoration: 'none' }}>
+            <div style={location.pathname === '/dashboard' ? styles.navCardActive : styles.navCard}>
+              <FaSearch size={20} color={location.pathname === '/dashboard' ? "#3b5998" : "#555"} />
+              <span style={{...styles.navTitle, color: location.pathname === '/dashboard' ? "#3b5998" : "#333"}}>
+                Dashboard
+              </span>
+            </div>
+          </Link>
 
-        <div style={styles.navCard} onClick={() => navigate('/comparar')}>
-          <FaExchangeAlt size={20} color="#555" />
-          <span style={styles.navTitle}>Comparar Notebooks</span>
-        </div>
-      </aside>
+          <div style={styles.navCard} onClick={() => navigate('/comparar')}>
+            <FaExchangeAlt size={20} color="#555" />
+            <span style={styles.navTitle}>Comparar Notebooks</span>
+          </div>
+        </aside>
 
-      {/* === COLUNA PRINCIPAL (CENTRO - ROLA) === */}
-      <main style={styles.mainColumn}>
-        <Outlet />
-      </main>
+        {/* === COLUNA PRINCIPAL (CENTRO - ROLA) === */}
+        <main style={styles.mainColumn}>
+          <Outlet />
+        </main>
 
-      {/* === COLUNA DA BARRA LATERAL (DIREITA - FIXA) === */}
-      <aside style={styles.sidebarColumn}>
-        <LojasMonitoradas />
-      </aside>
+        {/* === COLUNA DA BARRA LATERAL (DIREITA - FIXA) === */}
+        <aside style={styles.sidebarColumn}>
+          <LojasMonitoradas />
+        </aside>
 
+      </div>
     </div>
   );
 }
 
 const styles = {
+  wrapper: {
+    minHeight: '100vh',
+    backgroundColor: '#f5f5f5',
+  },
   dashboardContainer: {
     display: 'grid',
-    gridTemplateColumns: '260px 1fr 320px', // Ajustei levemente as larguras
+    gridTemplateColumns: '260px 1fr 320px',
     gap: '30px',
-    alignItems: 'start', // <--- IMPORTANTE: Isso impede que as laterais estiquem até o fim
+    alignItems: 'start',
     padding: '30px',
     maxWidth: '1600px',
     margin: '0 auto',
   },
-  
   leftNavColumn: {
-    position: 'sticky', // Faz ficar fixo
-    top: '100px',       // Distância do topo da tela (Ajuste se o Header for maior)
+    position: 'sticky',
+    top: '100px',
     display: 'flex',
     flexDirection: 'column',
     gap: '15px',
-    height: 'fit-content', // Garante que o tamanho seja apenas o do conteúdo
+    height: 'fit-content',
   },
-  
   mainColumn: {
     display: 'flex',
     flexDirection: 'column',
     gap: '20px',
-    minHeight: '80vh', // Garante altura mínima
+    minHeight: '80vh',
   },
-  
   sidebarColumn: {
-    position: 'sticky', // Faz ficar fixo
-    top: '100px',       // Distância do topo
+    position: 'sticky',
+    top: '100px',
     display: 'flex',
     flexDirection: 'column',
     gap: '20px',
     height: 'fit-content',
   },
-  
   navCard: {
     backgroundColor: '#fff',
     borderRadius: '12px',
@@ -94,7 +106,7 @@ const styles = {
     transition: 'all 0.2s ease',
     border: '1px solid transparent',
   },
-  navCardActive: { // Estilo quando está ativo
+  navCardActive: {
     backgroundColor: '#f0f7ff',
     borderRadius: '12px',
     padding: '18px 24px',
