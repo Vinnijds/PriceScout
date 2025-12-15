@@ -11,8 +11,9 @@ import Register from './pages/Register.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Comparar from './pages/Comparar.jsx'; 
 import ComparacaoDetalhe from './pages/ComparacaoDetalhe.jsx';
+import ProdutoDetalhe from './pages/ProdutoDetalhe.jsx';
 import Perfil from './pages/Perfil.jsx';
-import Procurar from './pages/Procurar.jsx'; // <-- IMPORTAÇÃO DA NOVA PÁGINA
+import Procurar from './pages/Procurar.jsx';
 
 // Importações de Componentes/Contexto
 import { AuthProvider } from './context/AuthContext.jsx';
@@ -52,15 +53,19 @@ const router = createBrowserRouter([
                 element: <Dashboard />,
               },
               {
-                path: '/procurar', // <-- ROTA ADICIONADA AQUI
+                path: '/procurar',
                 element: <Procurar />,
               },
               {
-                path: '/comparar', // A nova página de seleção
+                path: '/produto/:id',
+                element: <ProdutoDetalhe />,
+              },
+              {
+                path: '/comparar',
                 element: <Comparar />,
               },
               {
-                path: '/comparar/:id1/:id2', // A nova página de detalhes (com IDs dinâmicos)
+                path: '/comparar/:id1/:id2',
                 element: <ComparacaoDetalhe />,
               },
               {

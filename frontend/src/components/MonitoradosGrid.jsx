@@ -1,7 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaTrash, FaPen } from 'react-icons/fa';
 
 function MonitoradosGrid({ produtos, onUnfollow, onEditPrice }) {
+    const navigate = useNavigate();
+    
     if (!produtos || produtos.length === 0) return null;
 
     return (
@@ -28,7 +31,10 @@ function MonitoradosGrid({ produtos, onUnfollow, onEditPrice }) {
 
                     {/* Área de Ações (Botão Detalhes + Botão Editar) */}
                     <div style={styles.actionsRow}>
-                        <button style={styles.detailsBtn}>
+                        <button 
+                            onClick={() => navigate(`/produto/${produto.id}`)}
+                            style={styles.detailsBtn}
+                        >
                             Ver Detalhes
                         </button>
                         
