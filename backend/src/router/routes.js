@@ -2,7 +2,8 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../../db');
-const monitoramentoController = require('../controllers/MonitoramentoController'); 
+const monitoramentoController = require('../controllers/MonitoramentoController');
+const perfilController = require('../controllers/PerfilController');
 
 // --- Rotas de Dashboard/Monitoramento ---
 
@@ -25,6 +26,18 @@ router.get('/products/all', async (req, res) => {
         return res.status(500).json({ message: "Erro interno ao buscar produtos." });
     }
 });
+
+
+// --- Rotas de Perfil ---
+
+// Rota GET: /perfil (Obter dados do usuário)
+router.get('/perfil', perfilController.getPerfilUsuario);
+
+// Rota PUT: /perfil (Atualizar informações básicas)
+router.put('/perfil', perfilController.atualizarPerfil);
+
+// Rota PUT: /perfil/senha (Atualizar senha)
+router.put('/perfil/senha', perfilController.atualizarSenha);
 
 
 module.exports = router;

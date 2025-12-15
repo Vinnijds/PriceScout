@@ -49,7 +49,13 @@ export function AuthProvider({ children }) {
     // A linha 'navigate('/login')' FOI REMOVIDA (esta é a correção principal)
   };
 
-  // 6. O valor que será compartilhado com todos os componentes "filho"
+  // 6. Função para atualizar os dados do usuário
+  const updateUser = (userData) => {
+    localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
+  };
+
+  // 7. O valor que será compartilhado com todos os componentes "filho"
   const value = {
     user,
     token,
@@ -57,6 +63,7 @@ export function AuthProvider({ children }) {
     loading,
     login,
     logout,
+    updateUser,
   };
 
   return (
@@ -66,7 +73,7 @@ export function AuthProvider({ children }) {
   );
 }
 
-// 7. Hook customizado para facilitar o uso do contexto
+// 8. Hook customizado para facilitar o uso do contexto
 export function useAuth() {
   return useContext(AuthContext);
 }

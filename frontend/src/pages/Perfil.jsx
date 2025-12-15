@@ -1,34 +1,130 @@
 // src/pages/Perfil.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { FaEye, FaEyeSlash } from 'react-icons/fa'; // Ícones de olho
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import api from '../services/api';
 
 function Perfil() {
-  const { user } = useAuth(); // Pega o usuário logado do contexto
+  const { user, login } = useAuth();
 
-  // Divide o nome em "Nome" e "Sobrenome" (baseado no primeiro espaço)
-  const nomeCompleto = user ? user.nome : 'Usuário';
-  const primeiroEspaco = nomeCompleto.indexOf(' ');
-  const nome = primeiroEspaco > -1 ? nomeCompleto.substring(0, primeiroEspaco) : nomeCompleto;
-  const sobrenome = primeiroEspaco > -1 ? nomeCompleto.substring(primeiroEspaco + 1) : '';
+  // Estados para informações básicas
+  const [nome, setNome] = useState('');
+  const [sobrenome, setSobrenome] = useState('');
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [mensagemInfo, setMensagemInfo] = useState('');
+  const [erroInfo, setErroInfo] = useState('');
 
   // Estados para os campos de senha
   const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmaSenha, setConfirmaSenha] = useState('');
-  const [showSenha, setShowSenha] = useState(false);
+  const [showSenhaAtual, setShowSenhaAtual] = useState(false);
+  const [showNovaSenha, setShowNovaSenha] = useState(false);
   const [showConfirma, setShowConfirma] = useState(false);
+  const [mensagemSenha, setMensagemSenha] = useState('');
+  const [erroSenha, setErroSenha] = useState('');
 
-  // Funções (ainda não implementadas, apenas visuais)
-  const handleSaveInfo = (e) => {
+  // Carrega os dados do usuário ao montar o componente
+  useEffect(() => {
+    if (user) {
+      const nomeCompleto = user.nome || '';
+      const primeiroEspaco = nomeCompleto.indexOf(' ');
+      
+      if (primeiroEspaco > -1) {
+        setNome(nomeCompleto.substring(0, primeiroEspaco));
+        setSobrenome(nomeCompleto.substring(primeiroEspaco + 1));
+      } else {
+        setNome(nomeCompleto);
+        setSobrenome('');
+      }
+      
+      setEmail(user.email || '');
+    }
+  }, [user]);
+
+  // Função para salvar informações básicas
+  const handleSaveInfo = async (e) => {
     e.preventDefault();
-    alert('Funcionalidade de salvar informações básicas ainda não implementada.');
+    setLoading(true);
+    setMensagemInfo('');
+    setErroInfo('');
+
+    try {
+      const nomeCompleto = `${nome.trim()} ${sobrenome.trim()}`.trim();
+      
+      const response = await api.put('/perfil', {
+        nome: nomeCompleto,
+        email: email.trim()
+      });
+
+      // Atualiza o contexto de autenticação com os novos dados
+      const token = localStorage.getItem('token');
+      login(token, response.data.user);
+
+      setMensagemInfo('Informações atualizadas com sucesso!');
+      setTimeout(() => setMensagemInfo(''), 3000);
+    } catch (error) {
+      const mensagem = error.response?.data?.message || 'Erro ao atualizar informações.';
+      setErroInfo(mensagem);
+      setTimeout(() => setErroInfo(''), 5000);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleUpdatePassword = (e) => {
+  // Função para atualizar senha
+  const handleUpdatePassword = async (e) => {
     e.preventDefault();
-    // Lógica para verificar e atualizar a senha (próximo passo)
-    alert('Funcionalidade de atualizar senha ainda não implementada.');
+    setMensagemSenha('');
+    setErroSenha('');
+
+    // Validações no frontend
+    if (!senhaAtual || !novaSenha || !confirmaSenha) {
+      setErroSenha('Todos os campos de senha são obrigatórios.');
+      return;
+    }
+
+    if (novaSenha !== confirmaSenha) {
+      setErroSenha('A nova senha e a confirmação não coincidem.');
+      return;
+    }
+
+    if (novaSenha.length < 8) {
+      setErroSenha('A nova senha deve ter pelo menos 8 caracteres.');
+      return;
+    }
+
+    if (!/[0-9]/.test(novaSenha)) {
+      setErroSenha('A nova senha deve conter pelo menos um número.');
+      return;
+    }
+
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(novaSenha)) {
+      setErroSenha('A nova senha deve conter pelo menos um caractere especial.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await api.put('/perfil/senha', {
+        senhaAtual,
+        novaSenha
+      });
+
+      setMensagemSenha('Senha atualizada com sucesso!');
+      setSenhaAtual('');
+      setNovaSenha('');
+      setConfirmaSenha('');
+      setTimeout(() => setMensagemSenha(''), 3000);
+    } catch (error) {
+      const mensagem = error.response?.data?.message || 'Erro ao atualizar senha.';
+      setErroSenha(mensagem);
+      setTimeout(() => setErroSenha(''), 5000);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -37,11 +133,11 @@ function Perfil() {
       {/* --- CABEÇALHO DO PERFIL --- */}
       <div style={styles.profileHeader}>
         <img 
-          src="https://via.placeholder.com/100" // Placeholder para o avatar
+          src="https://via.placeholder.com/100"
           alt="Avatar" 
           style={styles.avatar} 
         />
-        <span style={styles.profileName}>{nomeCompleto}</span>
+        <span style={styles.profileName}>{nome} {sobrenome}</span>
       </div>
 
       {/* --- CARD 1: INFORMAÇÕES BÁSICAS --- */}
@@ -54,9 +150,10 @@ function Perfil() {
             <input 
               type="text" 
               id="nome" 
-              value={nome} 
-              style={styles.input} 
-              disabled // Desabilitado por enquanto
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              style={styles.input}
+              required
             />
           </div>
           <div style={styles.formField}>
@@ -64,9 +161,9 @@ function Perfil() {
             <input 
               type="text" 
               id="sobrenome" 
-              value={sobrenome} 
-              style={styles.input} 
-              disabled // Desabilitado por enquanto
+              value={sobrenome}
+              onChange={(e) => setSobrenome(e.target.value)}
+              style={styles.input}
             />
           </div>
           {/* Linha 2 */}
@@ -75,24 +172,33 @@ function Perfil() {
             <input 
               type="email" 
               id="email" 
-              value={user ? user.email : ''} 
-              style={styles.input} 
-              disabled 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={styles.input}
+              required
             />
           </div>
           <div style={styles.formField}>
-            <label htmlFor="aniversario" style={styles.label}>Data de aniversário</label>
-            <input 
-              type="text" 
-              id="aniversario" 
-              value="02/02/02" // Placeholder
-              style={styles.input} 
-              disabled 
-            />
+            {/* Campo vazio para manter grid */}
           </div>
+          
+          {/* Mensagens */}
+          {mensagemInfo && (
+            <div style={{...styles.formField, gridColumn: '1 / -1'}}>
+              <div style={styles.successMessage}>{mensagemInfo}</div>
+            </div>
+          )}
+          {erroInfo && (
+            <div style={{...styles.formField, gridColumn: '1 / -1'}}>
+              <div style={styles.errorMessage}>{erroInfo}</div>
+            </div>
+          )}
+          
           {/* Botão Salvar */}
           <div style={{...styles.formField, gridColumn: '2', textAlign: 'right'}}>
-            <button type="submit" style={styles.buttonPrimary}>Salvar</button>
+            <button type="submit" style={styles.buttonPrimary} disabled={loading}>
+              {loading ? 'Salvando...' : 'Salvar'}
+            </button>
           </div>
         </form>
       </div>
@@ -101,26 +207,29 @@ function Perfil() {
       <div style={styles.card}>
         <h2 style={styles.cardTitle}>Mude sua senha</h2>
         <form onSubmit={handleUpdatePassword}>
-          <div style={{...styles.formField, marginBottom: '15px'}}>
+          <div style={styles.passwordWrapper}>
             <input 
-              type="password" 
+              type={showSenhaAtual ? 'text' : 'password'} 
               placeholder="Inserir senha atual" 
               value={senhaAtual}
               onChange={(e) => setSenhaAtual(e.target.value)}
               style={styles.input} 
             />
+            <span style={styles.eyeIcon} onClick={() => setShowSenhaAtual(!showSenhaAtual)}>
+              {showSenhaAtual ? <FaEyeSlash /> : <FaEye />}
+            </span>
           </div>
           
           <div style={styles.passwordWrapper}>
             <input 
-              type={showSenha ? 'text' : 'password'} 
+              type={showNovaSenha ? 'text' : 'password'} 
               placeholder="Inserir nova senha" 
               value={novaSenha}
               onChange={(e) => setNovaSenha(e.target.value)}
               style={styles.input} 
             />
-            <span style={styles.eyeIcon} onClick={() => setShowSenha(!showSenha)}>
-              {showSenha ? <FaEyeSlash /> : <FaEye />}
+            <span style={styles.eyeIcon} onClick={() => setShowNovaSenha(!showNovaSenha)}>
+              {showNovaSenha ? <FaEyeSlash /> : <FaEye />}
             </span>
           </div>
 
@@ -147,8 +256,14 @@ function Perfil() {
             </ul>
           </div>
           
+          {/* Mensagens */}
+          {mensagemSenha && <div style={styles.successMessage}>{mensagemSenha}</div>}
+          {erroSenha && <div style={styles.errorMessage}>{erroSenha}</div>}
+          
           <div style={{textAlign: 'right'}}>
-            <button type="submit" style={styles.buttonPrimary}>Atualizar senha</button>
+            <button type="submit" style={styles.buttonPrimary} disabled={loading}>
+              {loading ? 'Atualizando...' : 'Atualizar senha'}
+            </button>
           </div>
         </form>
       </div>
@@ -160,8 +275,8 @@ function Perfil() {
 // --- ESTILOS CSS INLINE ---
 const styles = {
   container: {
-    maxWidth: '700px', // Largura do conteúdo central
-    margin: '0 auto', // Centraliza na página
+    maxWidth: '700px',
+    margin: '0 auto',
     padding: '20px 0',
     fontFamily: 'Arial, sans-serif',
   },
@@ -217,9 +332,9 @@ const styles = {
     borderRadius: '8px',
     border: '1px solid #ddd',
     fontSize: '16px',
-    backgroundColor: '#f7f7f7',
+    backgroundColor: '#fff',
     width: '100%',
-    boxSizing: 'border-box', // Garante que o padding não quebre o layout
+    boxSizing: 'border-box',
   },
   buttonPrimary: {
     padding: '12px 25px',
@@ -250,6 +365,22 @@ const styles = {
     marginTop: '20px',
     marginBottom: '20px',
     lineHeight: '1.6',
+  },
+  successMessage: {
+    backgroundColor: '#d4edda',
+    color: '#155724',
+    padding: '12px 15px',
+    borderRadius: '8px',
+    marginBottom: '15px',
+    border: '1px solid #c3e6cb',
+  },
+  errorMessage: {
+    backgroundColor: '#f8d7da',
+    color: '#721c24',
+    padding: '12px 15px',
+    borderRadius: '8px',
+    marginBottom: '15px',
+    border: '1px solid #f5c6cb',
   },
 };
 
