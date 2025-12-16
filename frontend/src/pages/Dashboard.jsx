@@ -18,6 +18,7 @@ function getMelhorOferta(ofertas) {
 function Dashboard() {
   const [produtosSeguidos, setProdutosSeguidos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [scrapingLoading, setScrapingLoading] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -47,18 +48,47 @@ function Dashboard() {
     } catch (e) { alert('Erro ao deixar de seguir.'); }
   };
 
+  const handleAtualizarPrecos = async () => {
+    setScrapingLoading(true);
+    try {
+      const response = await api.post('/api/run-scraper');
+      alert(response.data.message || 'Preços atualizados com sucesso!');
+      fetchData(); // Recarrega os dados
+    } catch (err) {
+      console.error('Erro ao atualizar preços:', err);
+      alert('Erro ao atualizar preços. Tente novamente.');
+    } finally {
+      setScrapingLoading(false);
+    }
+  };
+
   if (loading && !produtosSeguidos.length) return <div style={styles.loading}>Carregando...</div>;
 
   return (
     <>
-      {/* Seção 1: Grid de Produtos Seguidos */}
+      {/* Seção 1: Header e Botão de Atualizar Preços */}
+      <div style={styles.headerSection}>
+        <h2 style={styles.pageTitle}>Meus Notebooks Monitorados</h2>
+        <button 
+          onClick={handleAtualizarPrecos} 
+          disabled={scrapingLoading}
+          style={{
+            ...styles.btnAtualizar,
+            ...(scrapingLoading ? styles.btnAtualizarDisabled : {})
+          }}
+        >
+          {scrapingLoading ? ' Atualizando...' : ' Atualizar Preços'}
+        </button>
+      </div>
+
+      {/* Seção 2: Grid de Produtos Seguidos */}
       <MonitoradosGrid 
         produtos={produtosSeguidos} 
         onUnfollow={handleUnfollow} 
         onEditPrice={handleEditPrice} 
       />
 
-      {/* Seção 2: Tabela de Melhores Ofertas */}
+      {/* Seção 3: Tabela de Melhores Ofertas */}
       <div style={styles.section}>
         <h3 style={styles.title}>Resumo de Preços</h3>
         <table style={styles.table}>
@@ -112,6 +142,14 @@ const styles = {
   td: { padding: 12, borderBottom: '1px solid #f5f5f5', fontSize: 14 },
   tdCenter: { padding: 20, textAlign: 'center', color: '#999' },
   link: { color: '#3b5998', textDecoration: 'none', fontWeight: 'bold' },
+  headerSection: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  pageTitle: { fontSize: 22, color: '#333', margin: 0 },
+  btnAtualizar: { 
+    backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: 5, 
+    padding: '10px 20px', cursor: 'pointer', fontSize: 16, 
+    transition: 'background-color 0.3s'
+  },
+  btnAtualizarDisabled: { backgroundColor: '#007bff80', cursor: 'not-allowed' },
 };
 
 export default Dashboard;

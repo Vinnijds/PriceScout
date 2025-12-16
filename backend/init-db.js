@@ -1,6 +1,6 @@
 const { Client } = require('pg');
 
-const connectionString = 'postgresql://radar_admin:root@localhost:5432/radar_db';
+const connectionString = 'postgresql://radar_admin:postgres@localhost:5432/radar_db';
 
 const client = new Client({ connectionString });
 
