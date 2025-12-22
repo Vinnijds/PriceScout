@@ -18,14 +18,14 @@ const createTablesQuery = `
   );
 
   CREATE TABLE IF NOT EXISTS Produtos (
-    id SERIAL PRIMARY KEY,
-    nome_produto VARCHAR(255) NOT NULL,
-    termo_busca VARCHAR(255) NOT NULL,
-    cpu_base VARCHAR(100),
-    ram_base VARCHAR(50),
-    armazenamento_base VARCHAR(100),
-    tela_base VARCHAR(50)
-  );
+  id SERIAL PRIMARY KEY,
+  nome_produto VARCHAR(255) NOT NULL,
+  termo_busca VARCHAR(255) UNIQUE NOT NULL,
+  cpu_base VARCHAR(100),
+  ram_base VARCHAR(50),
+  armazenamento_base VARCHAR(100),
+  tela_base VARCHAR(50)
+);
 
   CREATE TABLE IF NOT EXISTS Ofertas (
     id SERIAL PRIMARY KEY,
@@ -83,7 +83,7 @@ async function setupDatabase() {
         ('Dell G15', 'notebook dell g15', 'Core i7', '16GB', '512GB SSD', '15.6'),
         ('MacBook Air M2', 'macbook air m2', 'M2', '8GB', '256GB SSD', '13.6'),
         ('Lenovo IdeaPad 3', 'notebook lenovo ideapad 3 ryzen 7', 'Ryzen 7', '12GB', '512GB SSD', '15.6')
-      ON CONFLICT DO NOTHING;
+      ON CONFLICT (termo_busca) DO NOTHING;
     `);
 
     console.log('Produtos fixos inseridos com sucesso!');
