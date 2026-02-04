@@ -15,10 +15,14 @@ function getMelhorOferta(ofertas) {
 }
 
 // --- Componente Principal do Dashboard ---
+import FiltroMonitoramentoModal from '../components/FiltroMonitoramentoModal.jsx';
+
 function Dashboard() {
   const [produtosSeguidos, setProdutosSeguidos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [scrapingLoading, setScrapingLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [produtoSelecionado, setProdutoSelecionado] = useState(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -36,8 +40,18 @@ function Dashboard() {
     fetchData();
   }, []);
 
-  const handleEditPrice = async (produtoId) => {
-    alert("Função de edição de filtro detalhado será implementada aqui.");
+  // Abre o modal de edição de filtro, preenchendo com o produto monitorado
+  const handleEditPrice = (produtoId) => {
+    const produto = produtosSeguidos.find(p => p.id === produtoId);
+    setProdutoSelecionado(produto);
+    setIsModalOpen(true);
+  };
+
+  // Após aplicar filtro, fecha modal e atualiza lista
+  const handleFiltroAplicado = () => {
+    setIsModalOpen(false);
+    setProdutoSelecionado(null);
+    fetchData();
   };
 
   const handleUnfollow = async (produtoId) => {
@@ -81,11 +95,20 @@ function Dashboard() {
         </button>
       </div>
 
+
       {/* Seção 2: Grid de Produtos Seguidos */}
       <MonitoradosGrid 
         produtos={produtosSeguidos} 
         onUnfollow={handleUnfollow} 
         onEditPrice={handleEditPrice} 
+      />
+
+      {/* Modal de Filtro para editar filtros do produto monitorado */}
+      <FiltroMonitoramentoModal
+        isOpen={isModalOpen}
+        onClose={() => { setIsModalOpen(false); setProdutoSelecionado(null); }}
+        produto={produtoSelecionado}
+        onFiltroAplicado={handleFiltroAplicado}
       />
 
       {/* Seção 3: Tabela de Melhores Ofertas */}
