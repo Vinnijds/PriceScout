@@ -87,7 +87,7 @@ function Comparar() {
               
               <div style={styles.imageContainer}>
                 <img 
-                  src={placeholderImg} 
+                  src={produto.url_imagem || placeholderImg} 
                   alt={produto.nome_produto} 
                   style={styles.image} 
                 />
@@ -202,10 +202,13 @@ const styles = {
     justifyContent: 'center',
     marginBottom: '15px',
   },
+  // FIX: força todas as imagens visualmente iguais
   image: {
-    maxWidth: '100%',
-    maxHeight: '100%',
+    width: '180px',
+    height: '120px',
     objectFit: 'contain',
+    display: 'block',
+    margin: '0 auto',
   },
   name: {
     fontSize: '16px',

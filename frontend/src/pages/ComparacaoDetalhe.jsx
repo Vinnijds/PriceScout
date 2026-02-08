@@ -15,7 +15,7 @@ function ProdutoCard({ produto }) {
   };
 
   const getStoreIcon = (lojaNome) => {
-    const lowerName = lojaNome.toLowerCase();
+    const lowerName = (lojaNome || '').toLowerCase();
     if (lowerName.includes('amazon')) return <FaAmazon size={24} color="#FF9900" />;
     if (lowerName.includes('mercado livre')) return <SiMercadopago size={24} color="#FFE600" />;
     if (lowerName.includes('magalu')) return <span style={styles.logoText}>M</span>;
@@ -27,7 +27,7 @@ function ProdutoCard({ produto }) {
     
     const ofertasPorLoja = {};
     produto.ofertas.forEach(oferta => {
-      const loja = oferta.loja;
+      const loja = oferta.loja || 'N/A';
       if (!ofertasPorLoja[loja] || oferta.preco_atual < ofertasPorLoja[loja].preco_atual) {
         ofertasPorLoja[loja] = oferta;
       }
@@ -46,7 +46,7 @@ function ProdutoCard({ produto }) {
         <div style={styles.produtoInfo}>
           <div style={styles.imageContainer}>
             <img 
-              src={placeholderImg} 
+              src={produto.url_imagem || placeholderImg} 
               alt={produto.nome_produto} 
               style={styles.productImage} 
             />
@@ -84,7 +84,7 @@ function ProdutoCard({ produto }) {
               <div key={index} style={styles.ofertaRow}>
                 <div style={styles.ofertaLeft}>
                   <img 
-                    src={placeholderImg} 
+                    src={produto.url_imagem || placeholderImg} 
                     alt={produto.nome_produto} 
                     style={styles.ofertaImage} 
                   />
@@ -219,9 +219,10 @@ const styles = {
     borderRadius: '8px',
     overflow: 'hidden',
   },
+  // FIX: força todas as imagens principais do detalhe a terem o mesmo tamanho visual
   productImage: {
-    maxWidth: '100%',
-    maxHeight: '100%',
+    width: '220px',
+    height: '160px',
     objectFit: 'contain',
   },
   specsContainer: {
