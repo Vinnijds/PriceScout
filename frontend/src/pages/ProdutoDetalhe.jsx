@@ -47,7 +47,6 @@ function ProdutoDetalhe() {
   const getMelhoresOfertasPorLoja = () => {
     if (!produto?.ofertas || produto.ofertas.length === 0) return [];
     
-    // Agrupa ofertas por loja
     const ofertasPorLoja = {};
     produto.ofertas.forEach(oferta => {
       const loja = oferta.loja;
@@ -56,13 +55,12 @@ function ProdutoDetalhe() {
       }
     });
     
-    // Retorna array com a melhor oferta de cada loja, ordenado por preço
     return Object.values(ofertasPorLoja).sort((a, b) => a.preco_atual - b.preco_atual);
   };
 
   const getMelhorOfertaGeral = (ofertas) => {
     if (!ofertas || ofertas.length === 0) return null;
-    return ofertas[0]; // Já está ordenado por preço
+    return ofertas[0];
   };
 
   if (loading) return <div style={styles.loading}>Carregando...</div>;
@@ -77,21 +75,28 @@ function ProdutoDetalhe() {
       {/* Seção: Informações do Produto Monitorado */}
       <div style={styles.section}>
         <h2 style={styles.sectionTitle}>Produto Monitorado</h2>
+
         <div style={styles.produtoInfo}>
+
           <div style={styles.imageContainer}>
             <img 
-              src={placeholderImg} 
-              alt={produto.nome_produto} 
+              src={produto.url_imagem || placeholderImg}
+              alt={produto.nome_produto}
               style={styles.productImage} 
             />
           </div>
+
           <div style={styles.detailsContainer}>
+
             <h3 style={styles.productName}>{produto.nome_produto}</h3>
             
             <div style={styles.configsGrid}>
+
               <div style={styles.configItem}>
                 <span style={styles.configLabel}>Preço Máximo Desejado:</span>
-                <span style={styles.configValue}>{formatCurrency(produto.preco_maximo_desejado)}</span>
+                <span style={styles.configValue}>
+                  {formatCurrency(produto.preco_maximo_desejado)}
+                </span>
               </div>
               
               {produto.ram_desejada && (
@@ -107,38 +112,54 @@ function ProdutoDetalhe() {
                   <span style={styles.configValue}>{produto.cpu_modelo_desejado}</span>
                 </div>
               )}
+
             </div>
 
           </div>
+
         </div>
       </div>
 
-      {/* Seção: Comparação de Preços nas Lojas */}
+      {/* Seção: Comparação de Preços */}
       <div style={styles.comparacaoSection}>
-        <h2 style={styles.comparacaoTitle}>Compare preços em {melhoresOfertas.length} lojas</h2>
+
+        <h2 style={styles.comparacaoTitle}>
+          Compare preços em {melhoresOfertas.length} lojas
+        </h2>
         
         {melhoresOfertas.length === 0 ? (
           <p style={styles.noOfertas}>Nenhuma oferta disponível no momento.</p>
         ) : (
+
           <div style={styles.ofertasList}>
+
             {melhoresOfertas.map((oferta, index) => (
+
               <div key={index} style={styles.ofertaRow}>
+
                 <div style={styles.ofertaLeft}>
+
                   <img 
-                    src={placeholderImg} 
-                    alt={produto.nome_produto} 
+                    src={produto.url_imagem || placeholderImg}
+                    alt={produto.nome_produto}
                     style={styles.ofertaImage} 
                   />
+
                   <div style={styles.ofertaInfo}>
+
                     <div style={styles.ofertaPreco}>
                       {formatCurrency(oferta.preco_atual)}
                     </div>
+
                     <div style={styles.ofertaLoja}>
                       {getStoreIcon(oferta.loja)}
                       <span style={styles.lojaTexto}>{oferta.loja}</span>
                     </div>
+
                     <div style={styles.lojaOrigem}>Brasil</div>
+
                   </div>
+
                 </div>
                 
                 <a 
@@ -149,14 +170,21 @@ function ProdutoDetalhe() {
                 >
                   Ir à loja
                 </a>
+
               </div>
+
             ))}
+
           </div>
+
         )}
+
       </div>
+
     </div>
   );
 }
+
 
 const styles = {
   container: {
@@ -245,8 +273,6 @@ const styles = {
     borderRadius: '4px',
     padding: '2px 8px',
   },
-  
-  // Estilos da seção de comparação
   comparacaoSection: {
     backgroundColor: 'white',
     padding: '30px',
@@ -262,7 +288,6 @@ const styles = {
   ofertasList: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '0',
   },
   ofertaRow: {
     display: 'flex',
@@ -316,9 +341,7 @@ const styles = {
     borderRadius: '8px',
     fontSize: '14px',
     fontWeight: '600',
-    border: 'none',
     cursor: 'pointer',
-    transition: 'background-color 0.2s',
   },
   noOfertas: {
     textAlign: 'center',
