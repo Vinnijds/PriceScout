@@ -23,6 +23,7 @@ const createTablesQuery = `
   termo_busca VARCHAR(255) UNIQUE NOT NULL,
   cpu_base VARCHAR(100),
   ram_base VARCHAR(50),
+  url_imagem TEXT,
   armazenamento_base VARCHAR(100),
   tela_base VARCHAR(50)
 );
